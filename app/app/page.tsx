@@ -237,7 +237,6 @@ export default function Home() {
               ))}
             </tbody>
           </table>
-          gm
         </div>
       </section>
     </main>
