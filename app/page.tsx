@@ -181,7 +181,7 @@ export default function Page() {
                 href="#story"
                 className="nav-link text-white/90 hover:text-white transition"
               >
-                Trạch Đạo
+                Trạch Đạo v.20
               </a>
               <a
                 href="#drop"
