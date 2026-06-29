@@ -18,6 +18,7 @@ type RedirectItem = {
   last_hit_at: string | null;
   created_at: string;
   slug: string | null;
+  is_active: boolean;
 };
 
 function generateCode(length = 5) {
@@ -37,6 +38,7 @@ export default function Home() {
   const [targetUrl, setTargetUrl] = useState("");
   const [note, setNote] = useState("");
   const [slug, setSlug] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [createdCode, setCreatedCode] = useState("");
   const [items, setItems] = useState<RedirectItem[]>([]);
@@ -65,6 +67,37 @@ export default function Home() {
     if (!targetUrl.trim()) return alert("Thiếu target URL");
 
     setLoading(true);
+
+    if (editingId) {
+      const { error } = await supabase
+        .from("redirects")
+        .update({
+          title,
+          type,
+          owner: owner || null,
+          slug: slug || null,
+          note,
+          target_url: targetUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", editingId);
+
+      setLoading(false);
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      setEditingId(null);
+      setTitle("");
+      setOwner("");
+      setSlug("");
+      setTargetUrl("");
+      setNote("");
+      await loadItems();
+      return;
+    }
 
     const code = await generateUniqueCode();
 
@@ -113,6 +146,16 @@ export default function Home() {
   async function copyUrl(code: string) {
     await navigator.clipboard.writeText(`${BASE_URL}/r/${code}`);
     alert("Copied");
+  }
+
+  function startEdit(item: RedirectItem) {
+    setEditingId(item.id);
+    setTitle(item.title);
+    setType(item.type);
+    setOwner(item.owner ?? "");
+    setSlug(item.slug ?? "");
+    setTargetUrl(item.target_url);
+    setNote(item.note ?? "");
   }
 
   return (
@@ -174,7 +217,7 @@ export default function Home() {
           disabled={loading}
           className="bg-white text-black px-4 py-2 disabled:opacity-50"
         >
-          {loading ? "Creating..." : "Create"}
+          {loading ? "Saving..." : editingId ? "Update" : "Create"}
         </button>
 
         {createdCode && (
@@ -226,12 +269,21 @@ export default function Home() {
                   </td>
                   <td className="p-2 max-w-xs truncate">{item.target_url}</td>
                   <td className="p-2">
-                    <button
-                      className="border px-2 py-1"
-                      onClick={() => copyUrl(item.code)}
-                    >
-                      Copy
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        className="border px-2 py-1"
+                        onClick={() => copyUrl(item.code)}
+                      >
+                        Copy
+                      </button>
+
+                      <button
+                        className="border px-2 py-1"
+                        onClick={() => startEdit(item)}
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
